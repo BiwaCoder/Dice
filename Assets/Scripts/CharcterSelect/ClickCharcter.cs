@@ -14,8 +14,9 @@ public class ClickCharcter : MonoBehaviour {
 	
 	}
 
+	//クリックしたキャラクターを保存してシーン遷移
 	public void OnClickImage(){
-		Debug.Log ("SpriteName:" + this.transform.GetComponent<Image> ().sprite.name);
+		//選択したキャラクターの名前を保存する
 		PlayerPrefs.SetString ("SelectCharcter", this.transform.GetComponent<Image> ().sprite.name);
 		Application.LoadLevel("DiceGame");
 	}
