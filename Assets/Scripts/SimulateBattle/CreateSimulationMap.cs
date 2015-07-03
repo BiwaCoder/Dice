@@ -7,6 +7,7 @@ public class CreateSimulationMap : MonoBehaviour {
 	/// 出力先キャンバス
 	/// </summary>
 	public GameObject TargetCanvas;
+	public Image bg;
 
 	public const int MapScreenOffsetX = 0;
 	public const int MapScreenOffsetY = 0;
@@ -14,26 +15,29 @@ public class CreateSimulationMap : MonoBehaviour {
 	public const int ChipSizeY = 64;
 
 	private int[,] map_chip_list = new int[,]{
-		{0,1,1,0,1},
-		{0,0,1,1,0}
+		{1,0,1,1,0},
+		{0,1,1,0,0}
 	};
 	private float CanvasHeight;
 	private float CanvasWidth;
 
-
+	private float MapPosX;
+	private float MapPosY;
 	
 	// Use this for initialization
 	void Start () {
 		CanvasWidth = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.x;
 		CanvasHeight = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.y;
+		setBg();
+
 
 		GameObject MapChipResouce = (GameObject)Resources.Load ("SimulateBattle/WoodChip");
 		for (int i=0; i < map_chip_list.GetLength(0); i++) {
 			for (int j=0; j < map_chip_list.GetLength(1); j++) {
 				if(map_chip_list[i,j] == 1){
 					GameObject MapChip= Instantiate (MapChipResouce) as GameObject;
-					MapChip.transform.SetParent (TargetCanvas.transform, false);
-					MapChip.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (i*ChipSizeX,-j*ChipSizeX, 0);
+					MapChip.transform.SetParent (bg.transform, false);
+					MapChip.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (i*ChipSizeX,-j*ChipSizeY, 0);
 					MapChip.GetComponent<RectTransform> ().anchorMin = new Vector2(0,1);
 					MapChip.GetComponent<RectTransform> ().anchorMax = new Vector2(0,1);
 					MapChip.GetComponent<RectTransform> ().pivot = new Vector2(0,1);
@@ -68,11 +72,23 @@ public class CreateSimulationMap : MonoBehaviour {
 	void Update () {
 		// マウス入力で左クリックをした瞬間
 		if (Input.GetMouseButtonDown (0)) {
+
+			Debug.Log (Input.mousePosition.x + ":" + Input.mousePosition.y);
 			Vector2 LocalPos = GetLocalPosition(Input.mousePosition.x,Input.mousePosition.y);
 			Vector2 TilePos = GetMapTileAtPosition(LocalPos.x,LocalPos.y);
 			Debug.Log(TilePos);
 
+
 			Debug.Log("SetChip"+GetManhattanDistance(0.0f,0.0f,TilePos.x,TilePos.y));
+		}
+	}
+
+	private void setBg() {
+		Image[] images = (Image[])GameObject.FindObjectsOfType(typeof(Image));
+		for(int i = 0;i < images.Length; i++) {
+			if(images[i].name == "bg") {
+				bg = images[i];
+			}
 		}
 	}
 }
