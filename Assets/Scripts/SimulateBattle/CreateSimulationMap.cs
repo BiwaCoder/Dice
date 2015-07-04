@@ -9,8 +9,8 @@ public class CreateSimulationMap : MonoBehaviour {
 	public GameObject TargetCanvas;
 	public Image bg;
 
-	public const int MapScreenOffsetX = 0;
-	public const int MapScreenOffsetY = 0;
+	public float MapScreenOffsetX = 0;
+	public float MapScreenOffsetY = 0;
 	public const int ChipSizeX = 64;
 	public const int ChipSizeY = 64;
 
@@ -23,13 +23,17 @@ public class CreateSimulationMap : MonoBehaviour {
 
 	private float MapPosX;
 	private float MapPosY;
-	
+
+	//キャラクターデータ
+	private GameObject CharcterImage;
+
 	// Use this for initialization
 	void Start () {
 		CanvasWidth = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.x;
 		CanvasHeight = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.y;
 		setBg();
-
+		MapScreenOffsetX = bg.GetComponent<RectTransform> ().anchoredPosition.x; 
+		MapScreenOffsetY = bg.GetComponent<RectTransform> ().anchoredPosition.y;
 
 		GameObject MapChipResouce = (GameObject)Resources.Load ("SimulateBattle/WoodChip");
 		for (int i=0; i < map_chip_list.GetLength(0); i++) {
@@ -44,10 +48,15 @@ public class CreateSimulationMap : MonoBehaviour {
 				}
 			}
 		}
+
+		GameObject CharcterImageResouce = (GameObject)Resources.Load ("SimulateBattle/tak");
+		CharcterImage= Instantiate (CharcterImageResouce) as GameObject;
+		CharcterImage.transform.SetParent (bg.transform, false);
+		CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (0,0, 0);
 	}
 	
 	Vector2 GetLocalPosition(float x,float y){
-		return new Vector2 (x - MapScreenOffsetX, CanvasHeight - y - MapScreenOffsetY);
+		return new Vector2 (x - MapScreenOffsetX, CanvasHeight - y + MapScreenOffsetY);
 	}
 
 	Vector2 GetWorldPosition(float x,float y){
@@ -73,11 +82,12 @@ public class CreateSimulationMap : MonoBehaviour {
 		// マウス入力で左クリックをした瞬間
 		if (Input.GetMouseButtonDown (0)) {
 
-			Debug.Log (Input.mousePosition.x + ":" + Input.mousePosition.y);
+		
 			Vector2 LocalPos = GetLocalPosition(Input.mousePosition.x,Input.mousePosition.y);
 			Vector2 TilePos = GetMapTileAtPosition(LocalPos.x,LocalPos.y);
-			Debug.Log(TilePos);
-
+			Debug.Log("LocalPos:"+LocalPos);
+			Debug.Log("TilePos:"+TilePos);
+			CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (LocalPos.x,-LocalPos.y, 0);
 
 			Debug.Log("SetChip"+GetManhattanDistance(0.0f,0.0f,TilePos.x,TilePos.y));
 		}

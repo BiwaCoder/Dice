@@ -49,8 +49,7 @@ public class CreateMap : MonoBehaviour {
 		}
 
 		CharcterImage= Instantiate (CharcterImageResouce) as GameObject;
-		CharcterImage.transform.SetParent (TargetCanvas.transform, false
-		                                   );
+		CharcterImage.transform.SetParent (TargetCanvas.transform, false);
 		CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (MapPosTable[0].PosX,MapPosTable[0].PosY, 0);
 	}
 	
