@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
+using UnityEngine.Assertions;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.UI;
 
 public class CreateSimulationMap : MonoBehaviour {
@@ -18,6 +20,16 @@ public class CreateSimulationMap : MonoBehaviour {
 		{1,0,1,1,0},
 		{0,1,1,0,0}
 	};
+	
+	private Dictionary<int, string> tempMapChipPrefabList
+		= new Dictionary<int, string>()
+	{
+		{1, "SimulateBattle/WoodChip"},
+	};
+
+	private Dictionary<int, MapChip> mapChip
+		= new Dictionary<int, MapChip>();
+
 	private float CanvasHeight;
 	private float CanvasWidth;
 
@@ -27,6 +39,14 @@ public class CreateSimulationMap : MonoBehaviour {
 	//キャラクターデータ
 	private GameObject CharcterImage;
 
+	void Awake () {
+		foreach(int key in tempMapChipPrefabList.Keys) {
+			MapChip tempMapChip = new MapChip(key, tempMapChipPrefabList[key]);
+			tempMapChip.prefab = (GameObject)Resources.Load (tempMapChip.prefabName);
+			mapChip.Add (key, tempMapChip);
+		}
+	}
+
 	// Use this for initialization
 	void Start () {
 		CanvasWidth = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.x;
@@ -35,11 +55,11 @@ public class CreateSimulationMap : MonoBehaviour {
 		MapScreenOffsetX = bg.GetComponent<RectTransform> ().anchoredPosition.x; 
 		MapScreenOffsetY = bg.GetComponent<RectTransform> ().anchoredPosition.y;
 
-		GameObject MapChipResouce = (GameObject)Resources.Load ("SimulateBattle/WoodChip");
 		for (int i=0; i < map_chip_list.GetLength(0); i++) {
 			for (int j=0; j < map_chip_list.GetLength(1); j++) {
 				if(map_chip_list[i,j] == 1){
-					GameObject MapChip= Instantiate (MapChipResouce) as GameObject;
+					Assert.IsTrue(mapChip.ContainsKey(map_chip_list[i,j]));
+					GameObject MapChip= Instantiate (mapChip[map_chip_list[i,j]].prefab) as GameObject;
 					MapChip.transform.SetParent (bg.transform, false);
 					MapChip.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (i*ChipSizeX,-j*ChipSizeY, 0);
 					MapChip.GetComponent<RectTransform> ().anchorMin = new Vector2(0,1);
