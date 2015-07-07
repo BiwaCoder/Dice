@@ -15,6 +15,8 @@ public class CreateSimulationMap : MonoBehaviour {
 	public float MapScreenOffsetY = 0;
 	public const int ChipSizeX = 64;
 	public const int ChipSizeY = 64;
+	public const int MapTilePosXMax = 8;
+	public const int MapTilePosYMax = 8;
 
 	private int[,] map_chip_list = new int[,]{
 		{1,0,1,1,0},
@@ -38,6 +40,10 @@ public class CreateSimulationMap : MonoBehaviour {
 
 	//キャラクターデータ
 	private GameObject CharcterImage;
+	private int playerMoveMentRange = 3;
+	private MapPoint tilePos;
+	private GameObject dispMoveChip;
+
 
 	void Awake () {
 		foreach(int key in tempMapChipPrefabList.Keys) {
@@ -45,6 +51,7 @@ public class CreateSimulationMap : MonoBehaviour {
 			tempMapChip.prefab = (GameObject)Resources.Load (tempMapChip.prefabName);
 			mapChip.Add (key, tempMapChip);
 		}
+		dispMoveChip = (GameObject)Resources.Load ("SimulateBattle/TileUmi");
 	}
 
 	// Use this for initialization
@@ -73,6 +80,9 @@ public class CreateSimulationMap : MonoBehaviour {
 		CharcterImage= Instantiate (CharcterImageResouce) as GameObject;
 		CharcterImage.transform.SetParent (bg.transform, false);
 		CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (0,0, 0);
+		this.tilePos = new MapPoint(0, 0);
+		this.drawMovementRange();
+		this.dispOrderController();
 	}
 	
 	Vector2 GetLocalPosition(float x,float y){
@@ -83,8 +93,9 @@ public class CreateSimulationMap : MonoBehaviour {
 		return new Vector2 (x + MapScreenOffsetX, y + MapScreenOffsetY);
 	}
 
-	Vector2 GetMapTileAtPosition(float x,float y){
-		return new Vector2 (Mathf.Floor(x/ChipSizeX), Mathf.Floor(y/ChipSizeY));
+	MapPoint GetMapTileAtPosition(float x,float y){
+		return new MapPoint(Mathf.FloorToInt(x/ChipSizeX), Mathf.FloorToInt(y/ChipSizeY));
+
 	}
 
 	Vector2 GetMapPositionAtTile(int i,int j){
@@ -104,13 +115,43 @@ public class CreateSimulationMap : MonoBehaviour {
 
 		
 			Vector2 LocalPos = GetLocalPosition(Input.mousePosition.x,Input.mousePosition.y);
-			Vector2 TilePos = GetMapTileAtPosition(LocalPos.x,LocalPos.y);
-			Debug.Log("LocalPos:"+LocalPos);
-			Debug.Log("TilePos:"+TilePos);
-			CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (LocalPos.x,-LocalPos.y, 0);
+			this.tilePos = GetMapTileAtPosition(LocalPos.x,LocalPos.y);
+			Vector2 UnitPos = new Vector2(tilePos.x * ChipSizeX, tilePos.y * ChipSizeY);
+			//Debug.Log("LocalPos:"+LocalPos);
+			Debug.Log("TilePos:"+tilePos);
 
-			Debug.Log("SetChip"+GetManhattanDistance(0.0f,0.0f,TilePos.x,TilePos.y));
+
+
+			//CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (LocalPos.x,-LocalPos.y, 0);
+			CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (UnitPos.x,-UnitPos.y, 0);
+
+			//Debug.Log("SetChip"+GetManhattanDistance(0.0f,0.0f,TilePos.x,TilePos.y));
 		}
+	}
+
+	private void drawMovementRange() {
+		for(int rangeX = -1 * this.playerMoveMentRange; rangeX <= this.playerMoveMentRange; rangeX++) {
+			int targetX = this.tilePos.x + rangeX;
+			for(int rangeY = -1 * this.playerMoveMentRange; rangeY <= this.playerMoveMentRange; rangeY++) {
+				int targetY = this.tilePos.y + rangeY;
+				if(!this.outOfBorders(targetX, targetY)) {
+					if(this.GetManhattanDistance(this.tilePos.x, this.tilePos.y, targetX, targetY) <= this.playerMoveMentRange) {
+						// 移動可能
+						GameObject tempTile = Instantiate (dispMoveChip) as GameObject;
+						tempTile.transform.SetParent (bg.transform, false);
+						tempTile.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (targetX * ChipSizeX, -1 * targetY * ChipSizeY, 0);
+					}
+				}
+			}
+		}
+	}
+	
+	private bool outOfBorders(int xPos, int yPos) {
+		if(xPos < 0) return true;
+		if(xPos >= MapTilePosXMax) return true;
+		if(yPos < 0) return true;
+		if(yPos >= MapTilePosYMax) return true;
+		return false;
 	}
 
 	private void setBg() {
@@ -121,4 +162,37 @@ public class CreateSimulationMap : MonoBehaviour {
 			}
 		}
 	}
+
+	private void dispOrderController() {
+		int idx = 0;
+		Image[] items = bg.GetComponentsInChildren<Image>();
+		foreach(Image item in items) {
+			if(item.gameObject.layer == LayerMask.NameToLayer ("MoveDisp")) {
+				item.transform.SetSiblingIndex(idx);
+				idx++;
+			}
+		}
+		foreach(Image item in items) {
+			if(item.gameObject.layer == LayerMask.NameToLayer ("MapChip")) {
+				item.transform.SetSiblingIndex(idx);
+				idx++;
+			}
+		}
+		foreach(Image item in items) {
+			if(item.gameObject.layer == LayerMask.NameToLayer ("Unit")) {
+				item.transform.SetSiblingIndex(idx);
+				idx++;
+			}
+		}
+	}
+
+	struct MapPoint{
+		public int x;
+		public int y;
+		public MapPoint(int _x, int _y)
+		{
+			this.x = _x;
+			this.y = _y;
+		}
+	};
 }
