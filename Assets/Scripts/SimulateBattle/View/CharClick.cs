@@ -12,7 +12,7 @@ public class CharClick : MonoBehaviour,IPointerDownHandler {
 		TileMapPoint clickTilePos = setting.ConvertLocalPositionToTile(LocalPos.x,LocalPos.y);
 		Debug.Log (clickTilePos.x+":"+clickTilePos.y);
 
-		//charView.Move (clickTilePos.x,clickTilePos.y);
+		//一升横に移動
 		this.GetComponent<SLgPartCharcterView> ().Move (clickTilePos.x+1, clickTilePos.y);
 
 	}

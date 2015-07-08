@@ -34,14 +34,6 @@ public class CreateSimulationMap : MonoBehaviour {
 
 	//キャラクターデータ
 	private GameObject CharcterImage;
-	//プレイヤーの移動範囲
-	private int playerMoveMentRange = 3;
-
-	//移動可能範囲を示すチップ
-	private GameObject dispMoveChip;
-	//移動可能な範囲の参照
-	List<GameObject> moveAblePosObjectList;
-
 	//キャラクター
 	SLGPartCharcterModel charModelData;
 
@@ -55,9 +47,7 @@ public class CreateSimulationMap : MonoBehaviour {
 			tempMapChip.prefab = (GameObject)Resources.Load (tempMapChip.prefabName);
 			mapChip.Add (key, tempMapChip);
 		}
-		dispMoveChip = (GameObject)Resources.Load ("SimulateBattle/TileUmi");
-		moveAblePosObjectList = new List<GameObject>();
-		charModelData = new SLGPartCharcterModel (0, 1, 3, false, false, false);
+	charModelData = new SLGPartCharcterModel (0, 1, 3, false, false, false);
 
 	}
 
@@ -108,57 +98,13 @@ public class CreateSimulationMap : MonoBehaviour {
 		}
 	}
 
-
-
 	// Update is called once per frame
 	void Update () {
 		// マウス入力で左クリックをした瞬間
 		if (Input.GetMouseButtonDown (0)) {
-			//Vector2 LocalPos = this.mapUtility.ConvertWorldToLocal(Input.mousePosition.x,Input.mousePosition.y);
-			//TileMapPoint clickTilePos = this.mapUtility.ConvertLocalPositionToTile(LocalPos.x,LocalPos.y);
-			//Vector2 UnitPos = this.mapUtility.ConvertTileToLocal(clickTilePos.x , clickTilePos.y );
-			//charView.Move (clickTilePos.x,clickTilePos.y);
-			//クリックした位置にキャラクターを表示させる
-			/*
-			CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (UnitPos.x,-UnitPos.y, 0);
-			drawMovementRange(clickTilePos);
-			this.dispOrderController();
-			*/
+
 		}
 
-	}
-
-	//移動可能オブジェクトな場所に画像を配置する
-	private void drawMovementRange(TileMapPoint clickTilePos) {
-		for (int i=moveAblePosObjectList.Count-1; i >= 0 ; --i) {
-			Destroy(moveAblePosObjectList[i]);
-		}
-		moveAblePosObjectList.Clear ();
-
-		for(int rangeX = -1 * this.playerMoveMentRange; rangeX <= this.playerMoveMentRange; rangeX++) {
-			int targetX = clickTilePos.x + rangeX;
-			for(int rangeY = -1 * this.playerMoveMentRange; rangeY <= this.playerMoveMentRange; rangeY++) {
-				int targetY = clickTilePos.y + rangeY;
-				if(!this.outOfTileBorders(targetX, targetY)) {
-					if(setting.GetManhattanDistance(clickTilePos.x,clickTilePos.y, targetX, targetY) <= this.playerMoveMentRange) {
-						// 移動可能領域に新規オブジェクトを配置可視化する
-						GameObject tempTile = Instantiate (dispMoveChip) as GameObject;
-						tempTile.transform.SetParent (bg.transform, false);
-						tempTile.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (targetX * ChipSizeX, -1 * targetY * ChipSizeY, 0);
-						moveAblePosObjectList.Add (tempTile);
-					}
-				}
-			}
-		}
-	}
-
-	//タイルが表示範囲内かをチェックする
-	private bool outOfTileBorders(int xTilePos, int yTilePos) {
-		if(xTilePos < 0) return true;
-		if(xTilePos >= MapTilePosXMax) return true;
-		if(yTilePos < 0) return true;
-		if(yTilePos >= MapTilePosYMax) return true;
-		return false;
 	}
 
 	private void setBg() {
