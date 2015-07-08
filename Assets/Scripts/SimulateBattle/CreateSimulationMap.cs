@@ -40,10 +40,14 @@ public class CreateSimulationMap : MonoBehaviour {
 
 	//キャラクターデータ
 	private GameObject CharcterImage;
+	//プレイヤーの移動範囲
 	private int playerMoveMentRange = 3;
-	private MapPoint tilePos;
+	//クリック座標の
+	private MapPoint clickTilePos;
+	//移動可能範囲を示すチップ
 	private GameObject dispMoveChip;
-
+	//移動可能な範囲の参照
+	List<GameObject> moveAblePosObjectList;
 
 	void Awake () {
 		foreach(int key in tempMapChipPrefabList.Keys) {
@@ -52,7 +56,8 @@ public class CreateSimulationMap : MonoBehaviour {
 			mapChip.Add (key, tempMapChip);
 		}
 		dispMoveChip = (GameObject)Resources.Load ("SimulateBattle/TileUmi");
-		this.tilePos = new MapPoint(0, 0);
+		this.clickTilePos = new MapPoint(0, 0);
+		moveAblePosObjectList = new List<GameObject>();
 	}
 
 	// Use this for initialization
@@ -81,7 +86,7 @@ public class CreateSimulationMap : MonoBehaviour {
 		CharcterImage= Instantiate (CharcterImageResouce) as GameObject;
 		CharcterImage.transform.SetParent (bg.transform, false);
 		CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (0,0, 0);
-		this.tilePos = new MapPoint(0, 0);
+		this.clickTilePos = new MapPoint(0, 0);
 		this.drawMovementRange();
 		this.dispOrderController();
 	}
@@ -119,26 +124,34 @@ public class CreateSimulationMap : MonoBehaviour {
 		// マウス入力で左クリックをした瞬間
 		if (Input.GetMouseButtonDown (0)) {
 			Vector2 LocalPos = ConvertWorldToLocal(Input.mousePosition.x,Input.mousePosition.y);
-			this.tilePos = ConvertLocalPositionToTile(LocalPos.x,LocalPos.y);
-			Vector2 UnitPos = ConvertTileToLocal(tilePos.x , tilePos.y );
+			this.clickTilePos = ConvertLocalPositionToTile(LocalPos.x,LocalPos.y);
+			Vector2 UnitPos = ConvertTileToLocal(clickTilePos.x , clickTilePos.y );
 			//クリックした位置にキャラクターを表示させる
 			CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (UnitPos.x,-UnitPos.y, 0);
+			drawMovementRange();
+			this.dispOrderController();
 		}
 
 	}
 
 	//移動可能オブジェクトな場所に画像を配置する
 	private void drawMovementRange() {
+		for (int i=moveAblePosObjectList.Count-1; i >= 0 ; --i) {
+			Destroy(moveAblePosObjectList[i]);
+		}
+		moveAblePosObjectList.Clear ();
+
 		for(int rangeX = -1 * this.playerMoveMentRange; rangeX <= this.playerMoveMentRange; rangeX++) {
-			int targetX = this.tilePos.x + rangeX;
+			int targetX = this.clickTilePos.x + rangeX;
 			for(int rangeY = -1 * this.playerMoveMentRange; rangeY <= this.playerMoveMentRange; rangeY++) {
-				int targetY = this.tilePos.y + rangeY;
+				int targetY = this.clickTilePos.y + rangeY;
 				if(!this.outOfTileBorders(targetX, targetY)) {
-					if(this.GetManhattanDistance(this.tilePos.x, this.tilePos.y, targetX, targetY) <= this.playerMoveMentRange) {
+					if(this.GetManhattanDistance(this.clickTilePos.x, this.clickTilePos.y, targetX, targetY) <= this.playerMoveMentRange) {
 						// 移動可能領域に新規オブジェクトを配置可視化する
 						GameObject tempTile = Instantiate (dispMoveChip) as GameObject;
 						tempTile.transform.SetParent (bg.transform, false);
 						tempTile.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (targetX * ChipSizeX, -1 * targetY * ChipSizeY, 0);
+						moveAblePosObjectList.Add (tempTile);
 					}
 				}
 			}
