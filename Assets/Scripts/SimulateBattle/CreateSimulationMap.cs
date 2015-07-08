@@ -11,10 +11,10 @@ public class CreateSimulationMap : MonoBehaviour {
 	public GameObject TargetCanvas;
 	public Image bg;
 
-	public float MapScreenOffsetX = 0;
-	public float MapScreenOffsetY = 0;
+	//一つひとつのチップサイズ
 	public const int ChipSizeX = 64;
 	public const int ChipSizeY = 64;
+	//タイルの最大数
 	public const int MapTilePosXMax = 8;
 	public const int MapTilePosYMax = 8;
 
@@ -32,22 +32,17 @@ public class CreateSimulationMap : MonoBehaviour {
 	private Dictionary<int, MapChip> mapChip
 		= new Dictionary<int, MapChip>();
 
-	private float CanvasHeight;
-	private float CanvasWidth;
-
-	private float MapPosX;
-	private float MapPosY;
-
 	//キャラクターデータ
 	private GameObject CharcterImage;
 	//プレイヤーの移動範囲
 	private int playerMoveMentRange = 3;
-	//クリック座標の
-	private MapPoint clickTilePos;
+
 	//移動可能範囲を示すチップ
 	private GameObject dispMoveChip;
 	//移動可能な範囲の参照
 	List<GameObject> moveAblePosObjectList;
+	//MAP関連情報をまとめるユーティリティ
+	MapUtility mapUtility;
 
 	void Awake () {
 		foreach(int key in tempMapChipPrefabList.Keys) {
@@ -56,18 +51,19 @@ public class CreateSimulationMap : MonoBehaviour {
 			mapChip.Add (key, tempMapChip);
 		}
 		dispMoveChip = (GameObject)Resources.Load ("SimulateBattle/TileUmi");
-		this.clickTilePos = new MapPoint(0, 0);
 		moveAblePosObjectList = new List<GameObject>();
+
 	}
 
 	// Use this for initialization
 	void Start () {
-		CanvasWidth = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.x;
-		CanvasHeight = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.y;
+		float CanvasWidth = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.x;
+		float CanvasHeight = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.y;
 		setBg();
-		MapScreenOffsetX = bg.GetComponent<RectTransform> ().anchoredPosition.x; 
-		MapScreenOffsetY = bg.GetComponent<RectTransform> ().anchoredPosition.y;
-
+		float MapScreenOffsetX = bg.GetComponent<RectTransform> ().anchoredPosition.x; 
+		float MapScreenOffsetY = bg.GetComponent<RectTransform> ().anchoredPosition.y;
+		this.mapUtility = new MapUtility (MapScreenOffsetX, MapScreenOffsetY, ChipSizeX, ChipSizeY, MapTilePosXMax, MapTilePosYMax, CanvasHeight, CanvasWidth);
+		                            
 		for (int i=0; i < map_chip_list.GetLength(0); i++) {
 			for (int j=0; j < map_chip_list.GetLength(1); j++) {
 				if(map_chip_list[i,j] == 1){
@@ -86,67 +82,41 @@ public class CreateSimulationMap : MonoBehaviour {
 		CharcterImage= Instantiate (CharcterImageResouce) as GameObject;
 		CharcterImage.transform.SetParent (bg.transform, false);
 		CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (0,0, 0);
-		this.clickTilePos = new MapPoint(0, 0);
-		this.drawMovementRange();
+		this.drawMovementRange(new TileMapPoint(0, 0));
 		this.dispOrderController();
 	}
 
-	//Unity全体の座標系から、表示領域内の座標を取得する
-	Vector2 ConvertWorldToLocal(float worldx,float worldy){
-		return new Vector2 (worldx - MapScreenOffsetX, CanvasHeight - worldy + MapScreenOffsetY);
-	}
 
-	//表示範囲内の座標から、Unity全体の座標系に直す
-	Vector2 ConvertLocalToWorld(float localx,float localy){
-		return new Vector2 (localx + MapScreenOffsetX, localy + MapScreenOffsetY);
-	}
-
-	//ローカル座標よりマス目の位置を取得する
-	MapPoint ConvertLocalPositionToTile(float localx,float localy){
-		return new MapPoint(Mathf.FloorToInt(localx/ChipSizeX), Mathf.FloorToInt(localy/ChipSizeY));
-
-	}
-
-	//タイル座標からローカル座標系への変換
-	Vector2 ConvertTileToLocal(int i,int j){
-		return new Vector2 (i*ChipSizeX,j*ChipSizeY);
-	}
-
-	//２点のタイル座標系からマンハッタン距離を求める
-	float GetManhattanDistance (float startI, float startJ,float endI, float endJ) {
-		float distance = Mathf.Abs(startI -endI) +Mathf.Abs(startJ -endJ);
-		return distance;
-	}
 
 
 	// Update is called once per frame
 	void Update () {
 		// マウス入力で左クリックをした瞬間
 		if (Input.GetMouseButtonDown (0)) {
-			Vector2 LocalPos = ConvertWorldToLocal(Input.mousePosition.x,Input.mousePosition.y);
-			this.clickTilePos = ConvertLocalPositionToTile(LocalPos.x,LocalPos.y);
-			Vector2 UnitPos = ConvertTileToLocal(clickTilePos.x , clickTilePos.y );
+			Vector2 LocalPos = this.mapUtility.ConvertWorldToLocal(Input.mousePosition.x,Input.mousePosition.y);
+			TileMapPoint clickTilePos = this.mapUtility.ConvertLocalPositionToTile(LocalPos.x,LocalPos.y);
+			Vector2 UnitPos = this.mapUtility.ConvertTileToLocal(clickTilePos.x , clickTilePos.y );
 			//クリックした位置にキャラクターを表示させる
 			CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (UnitPos.x,-UnitPos.y, 0);
-			drawMovementRange();
+			drawMovementRange(clickTilePos);
 			this.dispOrderController();
 		}
 
 	}
 
 	//移動可能オブジェクトな場所に画像を配置する
-	private void drawMovementRange() {
+	private void drawMovementRange(TileMapPoint clickTilePos) {
 		for (int i=moveAblePosObjectList.Count-1; i >= 0 ; --i) {
 			Destroy(moveAblePosObjectList[i]);
 		}
 		moveAblePosObjectList.Clear ();
 
 		for(int rangeX = -1 * this.playerMoveMentRange; rangeX <= this.playerMoveMentRange; rangeX++) {
-			int targetX = this.clickTilePos.x + rangeX;
+			int targetX = clickTilePos.x + rangeX;
 			for(int rangeY = -1 * this.playerMoveMentRange; rangeY <= this.playerMoveMentRange; rangeY++) {
-				int targetY = this.clickTilePos.y + rangeY;
+				int targetY = clickTilePos.y + rangeY;
 				if(!this.outOfTileBorders(targetX, targetY)) {
-					if(this.GetManhattanDistance(this.clickTilePos.x, this.clickTilePos.y, targetX, targetY) <= this.playerMoveMentRange) {
+					if(this.mapUtility.GetManhattanDistance(clickTilePos.x,clickTilePos.y, targetX, targetY) <= this.playerMoveMentRange) {
 						// 移動可能領域に新規オブジェクトを配置可視化する
 						GameObject tempTile = Instantiate (dispMoveChip) as GameObject;
 						tempTile.transform.SetParent (bg.transform, false);
@@ -200,14 +170,4 @@ public class CreateSimulationMap : MonoBehaviour {
 			}
 		}
 	}
-
-	struct MapPoint{
-		public int x;
-		public int y;
-		public MapPoint(int _x, int _y)
-		{
-			this.x = _x;
-			this.y = _y;
-		}
-	};
 }
