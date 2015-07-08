@@ -52,6 +52,7 @@ public class CreateSimulationMap : MonoBehaviour {
 			mapChip.Add (key, tempMapChip);
 		}
 		dispMoveChip = (GameObject)Resources.Load ("SimulateBattle/TileUmi");
+		this.tilePos = new MapPoint(0, 0);
 	}
 
 	// Use this for initialization
@@ -84,24 +85,29 @@ public class CreateSimulationMap : MonoBehaviour {
 		this.drawMovementRange();
 		this.dispOrderController();
 	}
-	
-	Vector2 GetLocalPosition(float x,float y){
-		return new Vector2 (x - MapScreenOffsetX, CanvasHeight - y + MapScreenOffsetY);
+
+	//Unity全体の座標系から、表示領域内の座標を取得する
+	Vector2 ConvertWorldToLocal(float worldx,float worldy){
+		return new Vector2 (worldx - MapScreenOffsetX, CanvasHeight - worldy + MapScreenOffsetY);
 	}
 
-	Vector2 GetWorldPosition(float x,float y){
-		return new Vector2 (x + MapScreenOffsetX, y + MapScreenOffsetY);
+	//表示範囲内の座標から、Unity全体の座標系に直す
+	Vector2 ConvertLocalToWorld(float localx,float localy){
+		return new Vector2 (localx + MapScreenOffsetX, localy + MapScreenOffsetY);
 	}
 
-	MapPoint GetMapTileAtPosition(float x,float y){
-		return new MapPoint(Mathf.FloorToInt(x/ChipSizeX), Mathf.FloorToInt(y/ChipSizeY));
+	//ローカル座標よりマス目の位置を取得する
+	MapPoint ConvertLocalPositionToTile(float localx,float localy){
+		return new MapPoint(Mathf.FloorToInt(localx/ChipSizeX), Mathf.FloorToInt(localy/ChipSizeY));
 
 	}
 
-	Vector2 GetMapPositionAtTile(int i,int j){
+	//タイル座標からローカル座標系への変換
+	Vector2 ConvertTileToLocal(int i,int j){
 		return new Vector2 (i*ChipSizeX,j*ChipSizeY);
 	}
 
+	//２点のタイル座標系からマンハッタン距離を求める
 	float GetManhattanDistance (float startI, float startJ,float endI, float endJ) {
 		float distance = Mathf.Abs(startI -endI) +Mathf.Abs(startJ -endJ);
 		return distance;
@@ -112,31 +118,24 @@ public class CreateSimulationMap : MonoBehaviour {
 	void Update () {
 		// マウス入力で左クリックをした瞬間
 		if (Input.GetMouseButtonDown (0)) {
-
-		
-			Vector2 LocalPos = GetLocalPosition(Input.mousePosition.x,Input.mousePosition.y);
-			this.tilePos = GetMapTileAtPosition(LocalPos.x,LocalPos.y);
-			Vector2 UnitPos = new Vector2(tilePos.x * ChipSizeX, tilePos.y * ChipSizeY);
-			//Debug.Log("LocalPos:"+LocalPos);
-			Debug.Log("TilePos:"+tilePos);
-
-
-
-			//CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (LocalPos.x,-LocalPos.y, 0);
+			Vector2 LocalPos = ConvertWorldToLocal(Input.mousePosition.x,Input.mousePosition.y);
+			this.tilePos = ConvertLocalPositionToTile(LocalPos.x,LocalPos.y);
+			Vector2 UnitPos = ConvertTileToLocal(tilePos.x , tilePos.y );
+			//クリックした位置にキャラクターを表示させる
 			CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (UnitPos.x,-UnitPos.y, 0);
-
-			//Debug.Log("SetChip"+GetManhattanDistance(0.0f,0.0f,TilePos.x,TilePos.y));
 		}
+
 	}
 
+	//移動可能オブジェクトな場所に画像を配置する
 	private void drawMovementRange() {
 		for(int rangeX = -1 * this.playerMoveMentRange; rangeX <= this.playerMoveMentRange; rangeX++) {
 			int targetX = this.tilePos.x + rangeX;
 			for(int rangeY = -1 * this.playerMoveMentRange; rangeY <= this.playerMoveMentRange; rangeY++) {
 				int targetY = this.tilePos.y + rangeY;
-				if(!this.outOfBorders(targetX, targetY)) {
+				if(!this.outOfTileBorders(targetX, targetY)) {
 					if(this.GetManhattanDistance(this.tilePos.x, this.tilePos.y, targetX, targetY) <= this.playerMoveMentRange) {
-						// 移動可能
+						// 移動可能領域に新規オブジェクトを配置可視化する
 						GameObject tempTile = Instantiate (dispMoveChip) as GameObject;
 						tempTile.transform.SetParent (bg.transform, false);
 						tempTile.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (targetX * ChipSizeX, -1 * targetY * ChipSizeY, 0);
@@ -145,12 +144,13 @@ public class CreateSimulationMap : MonoBehaviour {
 			}
 		}
 	}
-	
-	private bool outOfBorders(int xPos, int yPos) {
-		if(xPos < 0) return true;
-		if(xPos >= MapTilePosXMax) return true;
-		if(yPos < 0) return true;
-		if(yPos >= MapTilePosYMax) return true;
+
+	//タイルが表示範囲内かをチェックする
+	private bool outOfTileBorders(int xTilePos, int yTilePos) {
+		if(xTilePos < 0) return true;
+		if(xTilePos >= MapTilePosXMax) return true;
+		if(yTilePos < 0) return true;
+		if(yTilePos >= MapTilePosYMax) return true;
 		return false;
 	}
 
@@ -163,7 +163,9 @@ public class CreateSimulationMap : MonoBehaviour {
 		}
 	}
 
+	//表示順番の調整　MoveDisp->MapChip->Unitの順番に並べる
 	private void dispOrderController() {
+
 		int idx = 0;
 		Image[] items = bg.GetComponentsInChildren<Image>();
 		foreach(Image item in items) {
