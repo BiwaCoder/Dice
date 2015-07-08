@@ -48,7 +48,7 @@ public class MapUtility {
 	}
 	
 	//タイル座標からローカル座標系への変換
-	public Vector2 ConvertTileToLocal(int i,int j){
+	public Vector2 ConvertTileToLocal(float i,float j){
 		return new Vector2 (i*_ChipSizeX,j*_ChipSizeY);
 	}
 	

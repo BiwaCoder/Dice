@@ -41,9 +41,14 @@ public class CreateSimulationMap : MonoBehaviour {
 	private GameObject dispMoveChip;
 	//移動可能な範囲の参照
 	List<GameObject> moveAblePosObjectList;
-	//MAP関連情報をまとめるユーティリティ
-	MapUtility mapUtility;
 
+	//キャラクター
+	SLGPartCharcterModel charModelData;
+
+	//MAPの設定を持つスクリプタブルオブジェクト
+	[SerializeField]
+	private MapSetting setting;
+	
 	void Awake () {
 		foreach(int key in tempMapChipPrefabList.Keys) {
 			MapChip tempMapChip = new MapChip(key, tempMapChipPrefabList[key]);
@@ -52,18 +57,42 @@ public class CreateSimulationMap : MonoBehaviour {
 		}
 		dispMoveChip = (GameObject)Resources.Load ("SimulateBattle/TileUmi");
 		moveAblePosObjectList = new List<GameObject>();
+		charModelData = new SLGPartCharcterModel (0, 1, 3, false, false, false);
 
 	}
 
 	// Use this for initialization
 	void Start () {
+		this.InitMapSetting ();
+		this.LoadMapChip ();
+
+		GameObject CharcterImageResouce = (GameObject)Resources.Load ("SimulateBattle/tak");
+		CharcterImage= Instantiate (CharcterImageResouce) as GameObject;
+		CharcterImage.transform.SetParent (bg.transform, false);
+		CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (0,0, 0);
+		CharcterImage.GetComponent<SLgPartCharcterView> ().InitModel (charModelData);
+	}
+
+	void InitMapSetting()
+	{
+		//MAP設定の登録
 		float CanvasWidth = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.x;
 		float CanvasHeight = TargetCanvas.GetComponent<RectTransform> ().sizeDelta.y;
 		setBg();
 		float MapScreenOffsetX = bg.GetComponent<RectTransform> ().anchoredPosition.x; 
 		float MapScreenOffsetY = bg.GetComponent<RectTransform> ().anchoredPosition.y;
-		this.mapUtility = new MapUtility (MapScreenOffsetX, MapScreenOffsetY, ChipSizeX, ChipSizeY, MapTilePosXMax, MapTilePosYMax, CanvasHeight, CanvasWidth);
-		                            
+		setting.MapScreenOffsetX = MapScreenOffsetX;
+		setting.MapScreenOffsetY = MapScreenOffsetY;
+		setting.ChipSizeX = ChipSizeX;
+		setting.ChipSizeY = ChipSizeY;
+		setting.MapTilePosXMax = MapTilePosXMax;
+		setting.MapTilePosYMax = MapTilePosYMax;
+		setting.CanvasHeight = CanvasHeight;
+		setting.CanvasWidth = CanvasWidth;
+	}
+
+	void LoadMapChip()
+	{
 		for (int i=0; i < map_chip_list.GetLength(0); i++) {
 			for (int j=0; j < map_chip_list.GetLength(1); j++) {
 				if(map_chip_list[i,j] == 1){
@@ -77,15 +106,7 @@ public class CreateSimulationMap : MonoBehaviour {
 				}
 			}
 		}
-
-		GameObject CharcterImageResouce = (GameObject)Resources.Load ("SimulateBattle/tak");
-		CharcterImage= Instantiate (CharcterImageResouce) as GameObject;
-		CharcterImage.transform.SetParent (bg.transform, false);
-		CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (0,0, 0);
-		this.drawMovementRange(new TileMapPoint(0, 0));
-		this.dispOrderController();
 	}
-
 
 
 
@@ -93,13 +114,16 @@ public class CreateSimulationMap : MonoBehaviour {
 	void Update () {
 		// マウス入力で左クリックをした瞬間
 		if (Input.GetMouseButtonDown (0)) {
-			Vector2 LocalPos = this.mapUtility.ConvertWorldToLocal(Input.mousePosition.x,Input.mousePosition.y);
-			TileMapPoint clickTilePos = this.mapUtility.ConvertLocalPositionToTile(LocalPos.x,LocalPos.y);
-			Vector2 UnitPos = this.mapUtility.ConvertTileToLocal(clickTilePos.x , clickTilePos.y );
+			//Vector2 LocalPos = this.mapUtility.ConvertWorldToLocal(Input.mousePosition.x,Input.mousePosition.y);
+			//TileMapPoint clickTilePos = this.mapUtility.ConvertLocalPositionToTile(LocalPos.x,LocalPos.y);
+			//Vector2 UnitPos = this.mapUtility.ConvertTileToLocal(clickTilePos.x , clickTilePos.y );
+			//charView.Move (clickTilePos.x,clickTilePos.y);
 			//クリックした位置にキャラクターを表示させる
+			/*
 			CharcterImage.GetComponent<RectTransform> ().anchoredPosition = new Vector3 (UnitPos.x,-UnitPos.y, 0);
 			drawMovementRange(clickTilePos);
 			this.dispOrderController();
+			*/
 		}
 
 	}
@@ -116,7 +140,7 @@ public class CreateSimulationMap : MonoBehaviour {
 			for(int rangeY = -1 * this.playerMoveMentRange; rangeY <= this.playerMoveMentRange; rangeY++) {
 				int targetY = clickTilePos.y + rangeY;
 				if(!this.outOfTileBorders(targetX, targetY)) {
-					if(this.mapUtility.GetManhattanDistance(clickTilePos.x,clickTilePos.y, targetX, targetY) <= this.playerMoveMentRange) {
+					if(setting.GetManhattanDistance(clickTilePos.x,clickTilePos.y, targetX, targetY) <= this.playerMoveMentRange) {
 						// 移動可能領域に新規オブジェクトを配置可視化する
 						GameObject tempTile = Instantiate (dispMoveChip) as GameObject;
 						tempTile.transform.SetParent (bg.transform, false);
